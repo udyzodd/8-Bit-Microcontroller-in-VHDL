@@ -1,0 +1,9 @@
+# GHDL generated files
+work-obj*.cf
+
+# Generated waveform files
+*.ghw
+*.vcd
+
+# GTKWave temporary files
+*.sav.bak
