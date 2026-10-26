@@ -215,3 +215,139 @@ This project provides practical experience with:
 ---
 
 **Project status:** In progress — core ALU operations implemented and verified through simulation.
+
+## RAM Module (96x8)
+
+The microcontroller data memory is implemented as a synchronous 96x8 RAM module. It supports a 7-bit address bus, an 8-bit write data bus, and a write-enable signal. On each rising clock edge, data is written into the selected memory location when `write = '1'`; otherwise the current memory value is preserved.
+
+### RAM Features
+
+- 96 locations of 8-bit memory
+- 7-bit address input (`address(6 downto 0)`)
+- 8-bit data input (`data_in`)
+- Synchronous write operation using the clock signal
+- Read output available continuously via `data_out`
+- Initialized memory values included for simulation and testing
+
+### VHDL Implementation
+
+```vhdl
+library IEEE;
+use IEEE.STD_LOGIC_1164.ALL;
+use IEEE.STD_LOGIC_ARITH.ALL;
+use IEEE.STD_LOGIC_UNSIGNED.ALL;
+
+entity rw_96x8_sync is
+    port(
+        address : in std_logic_vector(6 downto 0);
+        data_in : in std_logic_vector(7 downto 0);
+        write   : in std_logic;
+        clock   : in std_logic;
+        data_out: out std_logic_vector(7 downto 0)
+    );
+end rw_96x8_sync;
+
+architecture Behavioral of rw_96x8_sync is
+    type data_mem is array (0 to 95) of std_logic_vector(7 downto 0);
+    signal RAM : data_mem := (
+        x"33", x"22", x"00", x"00",
+        x"00", x"00", x"00", x"00",
+        x"00", x"00", x"00", x"00",
+        x"00", x"00", x"00", x"00",
+        x"00", x"00", x"00", x"00",
+        x"00", x"00", x"00", x"00",
+        x"00", x"00", x"00", x"00",
+        x"00", x"00", x"00", x"00",
+        x"00", x"00", x"00", x"00",
+        x"00", x"00", x"00", x"00",
+        x"00", x"00", x"00", x"00",
+        x"00", x"00", x"00", x"00",
+        x"00", x"00", x"00", x"00",
+        x"00", x"00", x"00", x"00",
+        x"00", x"00", x"00", x"00",
+        x"00", x"00", x"00", x"00",
+        x"00", x"00", x"00", x"00", 
+        x"00", x"00", x"00", x"00",
+        x"00", x"00", x"00", x"00",
+        x"00", x"00", x"00", x"00",
+        x"00", x"00", x"00", x"00",
+        x"00", x"00", x"00", x"00",
+        x"00", x"00", x"00", x"00",
+        x"00", x"00", x"00", x"00"
+    );
+begin
+    process(clock)
+    begin
+        if rising_edge(clock) then
+            if write = '1' then
+                RAM(conv_integer(unsigned(address))) <= data_in;
+            end if;
+        end if;
+    end process;
+
+    data_out <= RAM(conv_integer(unsigned(address)));
+end Behavioral;
+```
+
+### RAM Testbench Summary
+
+A dedicated testbench was created to validate read, write, and preservation behavior of the RAM module.
+
+```vhdl
+-- Test 1: Check initial value at address 0
+address <= "0000000";
+assert data_out = x"33"
+    report "FAIL: Initial value at address 0"
+    severity failure;
+
+-- Test 2: Check initial value at address 1
+address <= "0000001";
+assert data_out = x"22"
+    report "FAIL: Initial value at address 1"
+    severity failure;
+
+-- Test 3: Write AB to address 5
+address <= "0000101";
+data_in <= x"AB";
+write <= '1';
+wait until rising_edge(clock);
+assert data_out = x"AB"
+    report "FAIL: Write/read at address 5"
+    severity failure;
+
+-- Test 4: Write disabled, value should remain unchanged
+write <= '0';
+data_in <= x"55";
+wait until rising_edge(clock);
+assert data_out = x"AB"
+    report "FAIL: RAM changed when write was disabled"
+    severity failure;
+```
+
+### Vivado / Schematic Validation
+
+The RAM module was verified in Vivado and confirmed to behave correctly in simulation and synthesis flow.
+
+![RAM Schematic](docs/images/RAM_schematic.png)
+
+### RAM Simulation Results
+
+The memory module was tested for initial values, write access, protected writes, and data retention behavior. The waveform confirms the expected read/write timing and memory state transitions.
+
+![RAM Simulation](docs/images/RAM_waveform.png)
+
+### Verification Outcomes
+
+The RAM testbench checks the following:
+
+- Initial memory contents at known addresses
+- Correct write operation at a selected address
+- Correct readback after write
+- Data retention when `write = '0'`
+- Unaffected values in neighboring memory locations
+
+All RAM tests passed successfully in the Vivado verification flow.
+
+---
+
+**Project status:** RAM module implemented, verified, and documented alongside the completed ALU section.
